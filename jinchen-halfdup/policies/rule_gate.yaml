@@ -1,0 +1,85 @@
+version: 2
+rules:
+  # 规则按优先级从上到下匹配，命中即停止
+  - id: block_sql_injection
+    priority: 100
+    pattern: "(?i)(union\\s+select|drop\\s+table|--\\s*$|;\\s*delete|insert\\s+into|update\\s+.*set)"
+    action: BLOCK
+    reason: "potential_injection"
+    log_level: warn
+
+  - id: block_xss
+    priority: 95
+    pattern: "(?i)(<script|javascript:|onerror=|onload=|eval\\s*\\()"
+    action: BLOCK
+    reason: "potential_xss"
+    log_level: warn
+
+  - id: block_prompt_injection
+    priority: 90
+    pattern: "(?i)(忽略.{0,5}指令|ignore.{0,5}instructions|disregard.{0,5}above|jailbreak|越狱|DAN\\s*mode|忘记.{0,5}身份|reveal.{0,5}prompt|show.{0,5}system)"
+    action: BLOCK
+    reason: "prompt_injection_attempt"
+    log_level: error
+
+  - id: block_command_injection
+    priority: 85
+    pattern: "(?i)(\\bcat\\s+/etc/|\\brm\\s+-rf|\\bwget\\s+http|\\bcurl\\s+http|powershell\\s+-|cmd\\s+/c)"
+    action: BLOCK
+    reason: "command_injection_attempt"
+    log_level: error
+
+  - id: block_special_char_spam
+    priority: 80
+    condition: "special_char_ratio > 0.3"
+    min_length: 3
+    action: BLOCK
+    reason: "garbled_input"
+    log_level: info
+
+  - id: block_repeated_chars
+    priority: 75
+    condition: "repeated_char_ratio > 0.5"
+    min_length: 4
+    action: BLOCK
+    reason: "repeated_character_spam"
+    log_level: info
+
+  - id: block_too_short
+    priority: 70
+    condition: "length < 2 AND no_real_word"
+    action: WAIT
+    reason: "too_short_waiting"
+    log_level: debug
+
+  - id: block_whitespace_only
+    priority: 60
+    pattern: "^[\\s\\p{P}]+$"
+    action: BLOCK
+    reason: "punctuation_only"
+    log_level: debug
+
+  - id: block_too_long
+    priority: 55
+    condition: "length > 4000"
+    action: TRUNCATE
+    reason: "input_too_long"
+    log_level: warn
+    truncate_to: 4000
+
+  - id: pass_normal
+    priority: 0
+    condition: "always"
+    action: PASS
+    reason: "default_pass"
+
+# 全局开关
+settings:
+  enable_regex_cache: true
+  max_pattern_length: 4096
+  log_all_blocks: true
+  alert_threshold: 10
+  alert_window_seconds: 60
+  # 热更新配置
+  hot_reload: true
+  config_check_interval: 30  # 每30秒检查配置文件变更

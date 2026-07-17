@@ -1,0 +1,53 @@
+version: 1
+
+# 第一层：输出标记
+output_labeling:
+  enabled: true
+  format: "[AI生成内容，仅供参考，请以人工复核为准]"
+  inject_position: "footer"
+
+# 第二层：高风险操作拦截
+high_risk_categories:
+  - "代码生成"
+  - "医疗建议"
+  - "法律建议"
+  - "金融决策"
+
+  compliance_suffix:
+    "代码生成": "⚠️ AI 生成代码可能存在错误，上线前须经资深工程师 Code Review"
+    "医疗建议": "⚠️ 本内容不构成医疗诊断，请咨询专业医生"
+    "法律建议": "⚠️ 本内容不构成法律意见，请咨询执业律师"
+    "金融决策": "⚠️ 本内容不构成投资建议，请独立判断"
+
+# 第三层：强制复核机制
+mandatory_review:
+  enabled: true
+  trigger_conditions:
+    - category: "代码生成"
+      requires: "senior_engineer_sign_off"
+      sign_off_levels:
+        - "初级工程师确认"
+        - "资深工程师签字"
+    - category: "医疗建议"
+      requires: "disclaimer_acknowledgment"
+    - category: "法律建议"
+      requires: "disclaimer_acknowledgment"
+    - category: "金融决策"
+      requires: "disclaimer_acknowledgment"
+
+  # 审计日志（不可篡改）
+  audit_log:
+    enabled: true
+    storage: "append_only_file"
+    retention_days: 3650  # 10年
+    hash_chain: true  # 链式哈希防篡改
+
+# 用户协议强制确认
+user_agreement:
+  first_use_must_accept: true
+  agreement_version: "2026-07-v2"
+  key_clauses:
+    - "AI 生成内容仅供参考，不构成专业建议"
+    - "代码类输出须经人工复核后方可上线"
+    - "用户不得利用本系统生成违法内容"
+    - "恶意输入（注入攻击等）将被记录并上报"
